@@ -1,0 +1,58 @@
+# OCI Build Specification for Employee Payroll Management System (Java 17 Maven Application)
+
+freeformTags:
+  Department: IT
+  Project: Payroll Management System
+
+definedTags:
+  Operations.CostCenter: 42
+
+# Define the base image
+base_image: "oraclelinux:8"
+
+# Define environment variables
+env:
+  JAVA_HOME: "/usr/lib/jvm/java-17-openjdk"
+  M2_HOME: "/opt/maven"
+  MAVEN_HOME: "/opt/maven"
+  PATH: "/opt/maven/bin:${PATH}"
+
+# Define the build commands to run inside the image
+build_steps:
+  - name: Install system dependencies
+    command: |
+      dnf update -y
+      dnf install -y git wget tar java-17-openjdk-devel
+      # Install Maven
+      cd /opt
+      wget https://dlcdn.apache.org/maven/maven-3/3.9.4/binaries/apache-maven-3.9.4-bin.tar.gz
+      tar -xzf apache-maven-3.9.4-bin.tar.gz
+      ln -s /opt/apache-maven-3.9.4 /opt/maven
+      echo 'export M2_HOME=/opt/maven' >> /etc/profile.d/maven.sh
+      echo 'export MAVEN_HOME=/opt/maven' >> /etc/profile.d/maven.sh
+      echo 'export PATH=$M2_HOME/bin:$PATH' >> /etc/profile.d/maven.sh
+      source /etc/profile.d/maven.sh
+
+  - name: Clone the repository
+    command: |
+      git clone https://github.com/Rajivravi/Employee-Payroll-Management-System.git /opt/employee-payroll
+
+  - name: Build the application with Maven
+    command: |
+      cd /opt/employee-payroll
+      mvn clean package
+      
+       - name: BuildDockerImage
+    image: docker:20.10.8
+    shell: bash
+    workingDir: /build
+    commands:
+      - docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+
+  - name: PushDockerImage
+    image: docker:20.10.8
+    shell: bash
+    commands:
+      - docker login ${OCIR_REGISTRY} -u '${OCIR_USERNAME}' -p '${OCIR_PASSWORD}'
+      - docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${OCIR_REGISTRY}/${OCIR_TENANCY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
+      - docker push ${OCIR_REGISTRY}/${OCIR_TENANCY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
