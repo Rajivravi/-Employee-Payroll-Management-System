@@ -4,8 +4,8 @@ freeformTags:
   Department: IT
   Project: Payroll Management System
 
-definedTags:
-  Operations.CostCenter: 42
+#definedTags:
+  #Operations.CostCenter: 42
 
 # Define the base image
 base_image: "oraclelinux:8"
@@ -41,8 +41,8 @@ build_steps:
     command: |
       cd /opt/employee-payroll
       mvn clean package
-      
-       - name: BuildDockerImage
+
+  - name: BuildDockerImage
     image: docker:20.10.8
     shell: bash
     workingDir: /build
